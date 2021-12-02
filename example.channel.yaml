@@ -1,0 +1,18 @@
+# link to podcast homepage
+link: https://test-podcast.com/
+
+# podcast title
+title: "The Weather"
+
+# podcast image url
+# (for use in a itunes:image tag
+imageurl: https://test-podcast.com/image.png
+
+# podcast description
+# for use in <description/> or <itunes:summary/>
+
+description: The description
+  of the podcast
+  in multiple lines and 
+
+  Multiple paragraphs
