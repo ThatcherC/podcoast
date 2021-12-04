@@ -48,7 +48,7 @@ fn main() {
     println!("");
     println!("");
     ituneschannel
-        .pretty_write_to(::std::io::stdout(), b' ', 2)
+        .pretty_write_to(writer, b' ', 2)
         .unwrap();
     println!("");
     println!("");
