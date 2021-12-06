@@ -4,14 +4,15 @@ use std::io::BufWriter;
 use std::fs::File;
 use std::path::Path;
 use std::io::Write;
+use std::path::PathBuf;
 
 
 #[macro_use]
 extern crate clap;
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-fn channelfromfile() -> rss::ChannelBuilder{
-    let f = std::fs::File::open("channel.yaml").expect("Unable to open file!");
+fn channelfromdir(path: &PathBuf) -> rss::ChannelBuilder{
+    let f = std::fs::File::open(path).expect("Unable to open file!");
     let data: serde_yaml::Value = serde_yaml::from_reader(f).expect("Unable to deserialize!");
 
     let linkurl = data["link"]
@@ -53,15 +54,14 @@ fn main() {
         (version: VERSION)
         (author: "Thatcher Chamberlin <j.thatcher.c@gmail.com>")
         (about: "Turn a directory of audio files into a podcast feed")
-        //(@arg CONFIG: -c --config +takes_value "Sets a custom config file")
-        //(@arg INPUT: +required "Sets the input file to use")
-        //(@arg debug: -d ... "Sets the level of debugging information")
-        (@arg OUTPUT: -o --output +takes_value "Sets output file")
-        //(@arg INPUT: +required "Sets the input file to use")
+        (@arg OUTPUT: -o --output +takes_value "Sets output directory")
+        (@arg INPUTDIR:  -i --input  +required +takes_value "Sets input directory")
         //(@arg debug: -d ... "Sets the level of debugging information")
     ).get_matches();
     
-    let ituneschannel = channelfromfile().build();
+    let inputpath = PathBuf::from(matches.value_of("INPUTDIR").unwrap()).join("channel.yaml");
+    
+    let ituneschannel = channelfromdir(&inputpath).build();
 
     let writer = match matches.value_of("OUTPUT") {
         Some(filename) => {
