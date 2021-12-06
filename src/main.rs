@@ -1,5 +1,14 @@
 use rss::extension::itunes::ITunesChannelExtension;
 use rss::ChannelBuilder;
+use std::io::BufWriter;
+use std::fs::File;
+use std::path::Path;
+use std::io::Write;
+
+
+#[macro_use]
+extern crate clap;
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 fn channelfromfile() -> rss::ChannelBuilder{
     let f = std::fs::File::open("channel.yaml").expect("Unable to open file!");
@@ -40,9 +49,28 @@ fn channelfromfile() -> rss::ChannelBuilder{
 
 
 fn main() {
+    let matches = clap_app!(myapp =>
+        (version: VERSION)
+        (author: "Thatcher Chamberlin <j.thatcher.c@gmail.com>")
+        (about: "Turn a directory of audio files into a podcast feed")
+        //(@arg CONFIG: -c --config +takes_value "Sets a custom config file")
+        //(@arg INPUT: +required "Sets the input file to use")
+        //(@arg debug: -d ... "Sets the level of debugging information")
+        (@arg OUTPUT: -o --output +takes_value "Sets output file")
+        //(@arg INPUT: +required "Sets the input file to use")
+        //(@arg debug: -d ... "Sets the level of debugging information")
+    ).get_matches();
+    
     let ituneschannel = channelfromfile().build();
 
-    let writer = ::std::io::stdout();
+    let writer = match matches.value_of("OUTPUT") {
+        Some(filename) => {
+            let path = Path::new(filename);
+            println!("Writing to '{}'", path.display());
+            Box::new(File::create(&path).unwrap()) as Box<dyn Write>
+        }
+        None => Box::new(::std::io::stdout()) as Box<dyn Write>,
+    };
     //    channel.write_to(writer).unwrap(); // // write to the channel to a writer
 
     println!("");
