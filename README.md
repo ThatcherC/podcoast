@@ -27,3 +27,30 @@ Google:
   - `<enclosure>`
   - `<title>`
 
+## Directories
+
+Input:
+```
+inputs/
+    channel.yaml
+    ep1/
+        episode1.mp3
+        episode.yaml
+    second-episode/
+        episode2.mp3
+        episode.yaml
+```
+
+Output:
+```
+output-dir/
+    rss/
+        podcast.rss
+    img/
+        channel-image.png
+        episode1-picture.jpg
+    audio/
+        episode1.mp3
+        episode2.mp3
+```
+which should be hosted .... TODO ...
