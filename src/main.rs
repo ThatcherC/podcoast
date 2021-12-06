@@ -1,6 +1,9 @@
 use rss::extension::itunes::ITunesChannelExtension;
-use rss::ChannelBuilder;
+use rss::{ChannelBuilder, ItemBuilder};
+use std::fs;
+use std::fs::DirEntry;
 use std::fs::File;
+use std::io;
 use std::io::BufWriter;
 use std::io::Write;
 use std::path::Path;
@@ -45,7 +48,29 @@ fn channelfromdir(path: &PathBuf) -> rss::ChannelBuilder {
     return ituneschannel;
 }
 
-fn main() {
+fn episodefromdir(path: &PathBuf) -> Option<rss::Item> {
+    // build a dummy episode that always succeeds using the filename
+    Some(
+        ItemBuilder::default()
+            .title(
+                path.file_name()
+                    .unwrap()
+                    .to_os_string()
+                    .into_string()
+                    .ok()?,
+            )
+            .description(
+                path.canonicalize()
+                    .ok()?
+                    .into_os_string()
+                    .into_string()
+                    .ok()?,
+            )
+            .build(),
+    )
+}
+
+fn main() -> io::Result<()> {
     let matches = clap_app!(myapp =>
         (version: VERSION)
         (author: "Thatcher Chamberlin <j.thatcher.c@gmail.com>")
@@ -56,9 +81,35 @@ fn main() {
     )
     .get_matches();
 
-    let inputpath = PathBuf::from(matches.value_of("INPUTDIR").unwrap()).join("channel.yaml");
+    let inputdirectory = matches.value_of("INPUTDIR").unwrap();
+    let inputpath = PathBuf::from(inputdirectory).join("channel.yaml");
 
-    let ituneschannel = channelfromdir(&inputpath).build();
+    let mut ituneschannel = channelfromdir(&inputpath);
+
+    // iterate over directories in input directory
+    let mut inputentries = fs::read_dir(inputdirectory)?
+        // map only applies the function if the element of the iterator is an Ok!
+        // so the second map here is like doing res?.path() is a type safe way
+        .map(|res| res.map(|e| e.path()))
+        .collect::<Result<Vec<_>, io::Error>>()?;
+
+    let inputdirectories = inputentries
+        .iter()
+        .filter(|e| e.is_dir())
+        .collect::<Vec<_>>();
+
+    println!("Entries    : {:?}", inputentries);
+    println!("Directories: {:?}", inputdirectories);
+
+    let episodes = inputdirectories
+        .iter()
+        .filter_map(|path| episodefromdir(&path))
+        .clone()
+        .collect::<Vec<_>>();
+
+    ituneschannel.items(episodes);
+
+    //println!("Episodes   : {:?}", episodes);
 
     let writer = match matches.value_of("OUTPUT") {
         Some(filename) => {
@@ -72,7 +123,12 @@ fn main() {
 
     println!("");
     println!("");
-    ituneschannel.pretty_write_to(writer, b' ', 2).unwrap();
+    ituneschannel
+        .build()
+        .pretty_write_to(writer, b' ', 2)
+        .unwrap();
     println!("");
     println!("");
+
+    Ok(())
 }
