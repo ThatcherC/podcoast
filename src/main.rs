@@ -89,7 +89,7 @@ fn main() -> io::Result<()> {
     // iterate over directories in input directory
     let mut inputentries = fs::read_dir(inputdirectory)?
         // map only applies the function if the element of the iterator is an Ok!
-        // so the second map here is like doing res?.path() is a type safe way
+        // so the second map is to convert from one type of Ok(_) to another type of Ok(_')
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>, io::Error>>()?;
 
