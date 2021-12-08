@@ -89,8 +89,9 @@ fn main() -> io::Result<()> {
     // iterate over directories in input directory
     let mut inputentries = fs::read_dir(inputdirectory)?
         // map only applies the function if the element of the iterator is an Ok!
-        // so the second map is to convert from one type of Ok(_) to another type of Ok(_')
-        .map(|res| res.map(|e| e.path()))
+        // since the items `res` are not lists, we can just use and_then to avoid map
+        // & the connotation of iterating
+        .map(|res| res.and_then(|e| Ok(e.path())))
         .collect::<Result<Vec<_>, io::Error>>()?;
 
     let inputdirectories = inputentries
