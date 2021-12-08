@@ -1,5 +1,5 @@
 use rss::extension::itunes::ITunesChannelExtension;
-use rss::{ChannelBuilder, ItemBuilder, EnclosureBuilder};
+use rss::{ChannelBuilder, EnclosureBuilder, ItemBuilder};
 use std::fs;
 use std::fs::DirEntry;
 use std::fs::File;
@@ -12,6 +12,16 @@ use std::path::PathBuf;
 #[macro_use]
 extern crate clap;
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
+const RSSPATH: &'static str = "rss/";
+const IMAGEPATH: &'static str = "img/";
+const AUDIOPATH: &'static str = "audio/";
+
+fn create_output_structure(path: &PathBuf) {
+    fs::create_dir_all(path.join(RSSPATH)).unwrap();
+    fs::create_dir_all(path.join(IMAGEPATH)).unwrap();
+    fs::create_dir_all(path.join(AUDIOPATH)).unwrap();
+}
 
 fn channelfromdir(path: &PathBuf) -> rss::ChannelBuilder {
     let f = std::fs::File::open(path).expect("Unable to open file!");
@@ -73,9 +83,7 @@ fn episodefromdir(path: &PathBuf) -> Option<rss::Item> {
                     .into_string()
                     .ok()?,
             )
-            .enclosure(
-                enclosurefromfile(path)?
-            )
+            .enclosure(enclosurefromfile(path)?)
             .build(),
     )
 }
@@ -85,11 +93,14 @@ fn main() -> io::Result<()> {
         (version: VERSION)
         (author: "Thatcher Chamberlin <j.thatcher.c@gmail.com>")
         (about: "Turn a directory of audio files into a podcast feed")
-        (@arg OUTPUT: -o --output +takes_value "Sets output directory")
+        (@arg OUTPUTDIR: -o --output +required +takes_value "Sets output directory")
         (@arg INPUTDIR:  -i --input  +required +takes_value "Sets input directory")
         //(@arg debug: -d ... "Sets the level of debugging information")
     )
     .get_matches();
+
+    let outputdirectory = PathBuf::from(matches.value_of("OUTPUTDIR").unwrap());
+    create_output_structure(&outputdirectory);
 
     let inputdirectory = matches.value_of("INPUTDIR").unwrap();
     let inputpath = PathBuf::from(inputdirectory).join("channel.yaml");
@@ -120,16 +131,10 @@ fn main() -> io::Result<()> {
 
     ituneschannel.items(episodes);
 
-    //println!("Episodes   : {:?}", episodes);
+    let path = outputdirectory.join(RSSPATH).join("podcast.rss");
+    println!("Writing to '{}'", path.display());
+    let writer = File::create(&path).unwrap();
 
-    let writer = match matches.value_of("OUTPUT") {
-        Some(filename) => {
-            let path = Path::new(filename);
-            println!("Writing to '{}'", path.display());
-            Box::new(File::create(&path).unwrap()) as Box<dyn Write>
-        }
-        None => Box::new(::std::io::stdout()) as Box<dyn Write>,
-    };
     //    channel.write_to(writer).unwrap(); // // write to the channel to a writer
 
     println!("");
