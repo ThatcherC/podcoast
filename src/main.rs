@@ -23,23 +23,20 @@ fn create_output_structure(path: &PathBuf) {
     fs::create_dir_all(path.join(AUDIOPATH)).unwrap();
 }
 
-fn channelfromdir(path: &PathBuf) -> rss::ChannelBuilder {
-    let f = std::fs::File::open(path).expect("Unable to open file!");
-    let data: serde_yaml::Value = serde_yaml::from_reader(f).expect("Unable to deserialize!");
-
-    let linkurl = data["link"]
+fn channelfromdir(config: &serde_yaml::Value) -> rss::ChannelBuilder {
+    let linkurl = config["link"]
         .as_str()
         .map(|s| s.to_string())
         .expect("Could not find key link in something.yaml");
     println!("Link: {}", linkurl);
 
-    let description = data["description"]
+    let description = config["description"]
         .as_str()
         .map(|s| s.to_string())
         .expect("Could not find key description in something.yaml");
     println!("Desc: {}", description);
 
-    let title = data["title"]
+    let title = config["title"]
         .as_str()
         .map(|s| s.to_string())
         .expect("Could not find key title in something.yaml");
@@ -98,14 +95,18 @@ fn main() -> io::Result<()> {
         //(@arg debug: -d ... "Sets the level of debugging information")
     )
     .get_matches();
+    
+    
 
     let outputdirectory = PathBuf::from(matches.value_of("OUTPUTDIR").unwrap());
     create_output_structure(&outputdirectory);
 
     let inputdirectory = matches.value_of("INPUTDIR").unwrap();
-    let inputpath = PathBuf::from(inputdirectory).join("channel.yaml");
-
-    let mut ituneschannel = channelfromdir(&inputpath);
+    let configpath = PathBuf::from(inputdirectory).join("channel.yaml");
+    let f = std::fs::File::open(configpath).expect("Unable to open config file!");
+    let config: serde_yaml::Value = serde_yaml::from_reader(f).expect("Unable to deserialize!");
+    
+    let mut ituneschannel = channelfromdir(&config);
 
     // iterate over directories in input directory
     let mut inputentries = fs::read_dir(inputdirectory)?
