@@ -140,6 +140,9 @@ fn main() -> io::Result<()> {
     let configpath = PathBuf::from(inputdirectory).join("channel.yaml");
     let f = std::fs::File::open(configpath).expect("Unable to open config file!");
     let config: serde_yaml::Value = serde_yaml::from_reader(f).expect("Unable to deserialize!");
+    let baseurl = config["baseurl"]
+        .as_str()
+        .expect("Could not find key baseurl in something.yaml");
 
     //create channel from config
     let mut ituneschannel = channelfromdir(&config);
@@ -180,7 +183,12 @@ fn main() -> io::Result<()> {
         .pretty_write_to(writer, b' ', 2)
         .unwrap();
     println!("");
-    println!("");
-
+    
+    println!("Wrote to '{}'", path.display());
+    println!("Copy {}/* to {} to publish!", outputdirectory.file_name()
+        .unwrap()
+        .to_os_string()
+        .into_string().expect("couldn't format"), baseurl);
+    
     Ok(())
 }
