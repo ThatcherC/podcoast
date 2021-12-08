@@ -76,18 +76,6 @@ fn channelfromdir(config: &serde_yaml::Value) -> rss::ChannelBuilder {
         .title(title)
         .link(linkurl)
         .clone();
-    if let Some(image) = ituneschannel
-        .clone()
-        .build()
-        .itunes_ext()
-        .expect("no itunes")
-        .image()
-        .as_ref()
-    {
-        println!("It's a some!");
-    } else {
-        println!("It's *not* a some!");
-    }
 
     println!(
         "Channel image: {}",
@@ -155,7 +143,6 @@ fn main() -> io::Result<()> {
 
     //create channel from config
     let mut ituneschannel = channelfromdir(&config);
-    println!("DOne");
 
     // iterate over directories in input directory
     let mut inputentries = fs::read_dir(inputdirectory)?
@@ -182,7 +169,6 @@ fn main() -> io::Result<()> {
     ituneschannel.items(episodes);
 
     let path = outputdirectory.join(RSSPATH).join("podcast.rss");
-    println!("Writing to '{}'", path.display());
     let writer = File::create(&path).unwrap();
 
     //    channel.write_to(writer).unwrap(); // // write to the channel to a writer
