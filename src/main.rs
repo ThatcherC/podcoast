@@ -1,5 +1,5 @@
 use rss::extension::itunes::ITunesChannelExtension;
-use rss::{ChannelBuilder, ItemBuilder};
+use rss::{ChannelBuilder, ItemBuilder, EnclosureBuilder};
 use std::fs;
 use std::fs::DirEntry;
 use std::fs::File;
@@ -48,6 +48,13 @@ fn channelfromdir(path: &PathBuf) -> rss::ChannelBuilder {
     return ituneschannel;
 }
 
+fn enclosurefromfile(path: &PathBuf) -> Option<rss::Enclosure> {
+    //TODO! build a (dummy?) enclosure object from a filename
+    // use rodio to get duration
+    // match fileformat with infer to get mime type
+    Some(EnclosureBuilder::default().build())
+}
+
 fn episodefromdir(path: &PathBuf) -> Option<rss::Item> {
     // build a dummy episode that always succeeds using the filename
     Some(
@@ -65,6 +72,9 @@ fn episodefromdir(path: &PathBuf) -> Option<rss::Item> {
                     .into_os_string()
                     .into_string()
                     .ok()?,
+            )
+            .enclosure(
+                enclosurefromfile(path)?
             )
             .build(),
     )
