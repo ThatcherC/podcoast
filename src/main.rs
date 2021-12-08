@@ -1,4 +1,4 @@
-use rss::extension::itunes::ITunesChannelExtensionBuilder;
+use rss::extension::itunes::{NAMESPACE, ITunesChannelExtensionBuilder};
 use rss::{ChannelBuilder, EnclosureBuilder, ItemBuilder};
 use std::fs;
 use std::fs::DirEntry;
@@ -64,6 +64,7 @@ fn channelfromdir(config: &serde_yaml::Value) -> rss::ChannelBuilder {
         .build();
 
     let ituneschannel = ChannelBuilder::default()
+        .namespace(("itunes".to_string(), NAMESPACE.to_string())) // NOTE: should this be required? might be a bug in rss crate
         .itunes_ext(channelext)
         .title(title)
         .link(linkurl)
