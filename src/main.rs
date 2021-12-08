@@ -1,4 +1,4 @@
-use rss::extension::itunes::ITunesChannelExtension;
+use rss::extension::itunes::ITunesChannelExtensionBuilder;
 use rss::{ChannelBuilder, EnclosureBuilder, ItemBuilder};
 use std::fs;
 use std::fs::DirEntry;
@@ -8,6 +8,7 @@ use std::io::BufWriter;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
+use url::{Url,ParseError};
 
 #[macro_use]
 extern crate clap;
@@ -41,17 +42,41 @@ fn channelfromdir(config: &serde_yaml::Value) -> rss::ChannelBuilder {
         .map(|s| s.to_string())
         .expect("Could not find key title in something.yaml");
     println!("Title: {}", title);
-
-    let mut channelext = ITunesChannelExtension::default();
-    channelext.set_author("John Doe".to_string());
-    channelext.set_summary(description);
+    
+    let baseurl = config["baseurl"]
+        .as_str()
+        .expect("Could not find key baseurl in something.yaml");
+    println!("Base URL: {}", baseurl);
+    
+    let imagename = config["imagename"]
+        .as_str()
+        .expect("Could not find key imagename in something.yaml");
+    println!("Image: {}", imagename);
+    
+    let imageurl = Url::parse(baseurl).unwrap().join(IMAGEPATH).unwrap().join(imagename).unwrap().as_str().to_string();
+    
+    println!("Image URL: {}", imageurl.clone());
+    
+    let mut channelext = ITunesChannelExtensionBuilder::default()
+        .image(imageurl)
+        .author("John Doe".to_string())
+        .summary(description)
+        .build();
 
     let ituneschannel = ChannelBuilder::default()
         .itunes_ext(channelext)
         .title(title)
         .link(linkurl)
         .clone();
-
+    if let Some(image) = ituneschannel.clone().build().itunes_ext().expect("no itunes").image().as_ref() {
+        println!("It's a some!");
+    }else{
+        println!("It's *not* a some!");
+    }
+        
+    
+    println!("Channel image: {}", ituneschannel.clone().build().itunes_ext().expect("no itunes").image().expect("bad iamge?"));
+    
     return ituneschannel;
 }
 
@@ -102,11 +127,14 @@ fn main() -> io::Result<()> {
     create_output_structure(&outputdirectory);
 
     let inputdirectory = matches.value_of("INPUTDIR").unwrap();
+    
     let configpath = PathBuf::from(inputdirectory).join("channel.yaml");
     let f = std::fs::File::open(configpath).expect("Unable to open config file!");
     let config: serde_yaml::Value = serde_yaml::from_reader(f).expect("Unable to deserialize!");
     
+    //create channel from config
     let mut ituneschannel = channelfromdir(&config);
+    println!("DOne");
 
     // iterate over directories in input directory
     let mut inputentries = fs::read_dir(inputdirectory)?

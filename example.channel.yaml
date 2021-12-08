@@ -4,9 +4,11 @@ link: https://test-podcast.com/
 # podcast title
 title: "The Weather"
 
-# podcast image url
+baseurl: https://test-podcast.com/pod/
+
+# podcast image path, relative to this file
 # (for use in a itunes:image tag
-imageurl: https://test-podcast.com/image.png
+imagename: demo-image.png
 
 # podcast description
 # for use in <description/> or <itunes:summary/>
