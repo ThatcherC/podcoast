@@ -191,6 +191,7 @@ fn main() -> io::Result<()> {
         .unwrap()
         .to_os_string()
         .into_string().expect("couldn't format"), baseurl);
+    println!("And subscribe to {}{}podcast.rss to subscribe!", baseurl, RSSPATH);
     
     Ok(())
 }
