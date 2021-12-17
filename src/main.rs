@@ -91,30 +91,32 @@ fn channelfromdir(config: &serde_yaml::Value) -> rss::ChannelBuilder {
     return ituneschannel;
 }
 
-fn enclosurefromfile(path: &PathBuf) -> Option<rss::Enclosure> {
+fn enclosurefromfile(path: &PathBuf) -> Result<rss::Enclosure,  Box<dyn std::error::Error>> {
     //TODO! build a (dummy?) enclosure object from a filename
     // use rodio to get duration
     // match fileformat with infer to get mime type
-    Some(EnclosureBuilder::default().build())
+    
+    // TODO! copy audio file to output tree
+    Ok(EnclosureBuilder::default().build())
 }
 
-fn episodefromdir(path: &PathBuf) -> Option<rss::Item> {
+fn episodefromdir(path: &PathBuf) -> Result<rss::Item, Box<dyn std::error::Error>> {
     // build a dummy episode that always succeeds using the filename
-    Some(
+    let pathstr = path.canonicalize()?
+        .into_os_string()
+        .into_string().map_err(|e| "couldn't stringify")?;
+        
+    let title = path.file_name().ok_or("coudn't get path name!")?
+        .to_os_string()
+        .into_string().map_err(|e| "couldn't stringify")?;
+    
+    Ok(
         ItemBuilder::default()
             .title(
-                path.file_name()
-                    .unwrap()
-                    .to_os_string()
-                    .into_string()
-                    .ok()?,
+                title
             )
             .description(
-                path.canonicalize()
-                    .ok()?
-                    .into_os_string()
-                    .into_string()
-                    .ok()?,
+                pathstr
             )
             .enclosure(enclosurefromfile(path)?)
             .build(),
@@ -165,7 +167,7 @@ fn main() -> io::Result<()> {
 
     let episodes = inputdirectories
         .iter()
-        .filter_map(|path| episodefromdir(&path))
+        .filter_map(|path| episodefromdir(&path).ok())
         .clone()
         .collect::<Vec<_>>();
 
