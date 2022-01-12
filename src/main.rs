@@ -91,36 +91,90 @@ fn channelfromdir(config: &serde_yaml::Value) -> rss::ChannelBuilder {
     return ituneschannel;
 }
 
-fn enclosurefromfile(path: &PathBuf) -> Result<rss::Enclosure,  Box<dyn std::error::Error>> {
+fn enclosurefromfile(path: &PathBuf) -> Result<rss::Enclosure, Box<dyn std::error::Error>> {
     //TODO! build a (dummy?) enclosure object from a filename
     // use rodio to get duration
     // match fileformat with infer to get mime type
-    
+
+    let filetype = infer::get_from_path(path)
+        .expect("file read successfully")
+        .expect("file type is known");
+
+    let metadata = fs::metadata(path)?;
+
+    println!("Build enclosure! {} bytes", metadata.len().to_string());
+
     // TODO! copy audio file to output tree
-    Ok(EnclosureBuilder::default().build())
+    // Ok(enclosure.build())
+    Ok(EnclosureBuilder::default()
+        .mime_type(filetype.mime_type())
+        .length(metadata.len().to_string())
+        .build())
+}
+
+fn isokayaudio(mimetype: &str) -> bool {
+    println!("Check whether mimetype {} matches audio/wav", mimetype);
+
+    mimetype == "audio/wav" || mimetype == "audio/x-wav"
 }
 
 fn episodefromdir(path: &PathBuf) -> Result<rss::Item, Box<dyn std::error::Error>> {
     // build a dummy episode that always succeeds using the filename
-    let pathstr = path.canonicalize()?
+    let pathstr = path
+        .canonicalize()?
         .into_os_string()
-        .into_string().map_err(|e| "couldn't stringify")?;
-        
-    let title = path.file_name().ok_or("coudn't get path name!")?
+        .into_string()
+        .map_err(|e| "couldn't stringify")?;
+
+    // Produce a title for the episode
+    // TODO: remove dummy title which is just the filename
+    let title = path
+        .file_name()
+        .ok_or("coudn't get path name!")?
         .to_os_string()
-        .into_string().map_err(|e| "couldn't stringify")?;
-    
-    Ok(
-        ItemBuilder::default()
-            .title(
-                title
+        .into_string()
+        .map_err(|e| "couldn't stringify")?;
+
+    println!("");
+    println!("{:?}", path);
+
+    let files = fs::read_dir(path)?
+        // map only applies the function if the element of the iterator is an Ok!
+        // since the items `res` are not lists, we can just use and_then to avoid map
+        // & the connotation of iterating
+        .map(|res| res.and_then(|e| Ok(e.path())))
+        .collect::<Result<Vec<_>, io::Error>>()?;
+
+    println!("List of files: {:?}", files);
+
+    let audiofiles = files
+        .iter()
+        .filter(|e| {
+            isokayaudio(
+                infer::get_from_path(e)
+                    .expect("file read successfully")
+                    .expect("file type is known")
+                    .mime_type(),
             )
-            .description(
-                pathstr
-            )
-            .enclosure(enclosurefromfile(path)?)
-            .build(),
-    )
+        })
+        .collect::<Vec<_>>();
+
+    println!("List of audio files: {:?}", audiofiles);
+
+    // TODO! check if more than one audio file exists. this assumes there's one
+    // and uses the first
+    let audiofile = audiofiles[0];
+    //    .iter()
+    //    .next()
+    //    .ok_or("No audio files available!")?;
+
+    println!("Selected audio file: {:?}", audiofile);
+
+    Ok(ItemBuilder::default()
+        .title(title)
+        .description(pathstr)
+        .enclosure(enclosurefromfile(audiofile)?)
+        .build())
 }
 
 fn main() -> io::Result<()> {
