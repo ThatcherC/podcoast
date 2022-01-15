@@ -24,7 +24,11 @@ fn create_output_structure(path: &PathBuf) {
     fs::create_dir_all(path.join(AUDIOPATH)).unwrap();
 }
 
-fn channelfromdir(config: &serde_yaml::Value) -> rss::ChannelBuilder {
+fn channelfromdir(
+    config: &serde_yaml::Value,
+    inputdirectory: &PathBuf,
+    outputdirectory: &PathBuf,
+) -> rss::ChannelBuilder {
     let linkurl = config["link"]
         .as_str()
         .map(|s| s.to_string())
@@ -53,11 +57,34 @@ fn channelfromdir(config: &serde_yaml::Value) -> rss::ChannelBuilder {
         .expect("Could not find key imagename in something.yaml");
     println!("Image: {}", imagename);
 
+    // path of audio file in the input structure
+    let filename = Path::new(imagename).file_name().unwrap().to_str().unwrap();
+
+    let imageinputpath = PathBuf::from(inputdirectory)
+        .join(&filename)
+        .to_str()
+        .unwrap()
+        .to_string();
+
+    let imagerelativepath = PathBuf::from(IMAGEPATH).join(filename);
+
+    // path of episode audio file in the output structure
+    let imageoutputpath = PathBuf::from(outputdirectory)
+        .join(&imagerelativepath)
+        .to_str()
+        .unwrap()
+        .to_string();
+
+    println!(
+        "Copying {:?} to {}",
+        imageinputpath.clone(),
+        imageoutputpath.clone()
+    );
+    fs::copy(imageinputpath.clone(), imageoutputpath.clone());
+
     let imageurl = Url::parse(baseurl)
         .unwrap()
-        .join(IMAGEPATH)
-        .unwrap()
-        .join(imagename)
+        .join(&imagerelativepath.to_str().unwrap().to_string())
         .unwrap()
         .as_str()
         .to_string();
@@ -236,9 +263,9 @@ fn main() -> io::Result<()> {
     let outputdirectory = PathBuf::from(matches.value_of("OUTPUTDIR").unwrap());
     create_output_structure(&outputdirectory);
 
-    let inputdirectory = matches.value_of("INPUTDIR").unwrap();
+    let inputdirectory = PathBuf::from(matches.value_of("INPUTDIR").unwrap());
 
-    let configpath = PathBuf::from(inputdirectory).join("channel.yaml");
+    let configpath = PathBuf::from(inputdirectory.clone()).join("channel.yaml");
     let f = std::fs::File::open(configpath).expect("Unable to open config file!");
     let config: serde_yaml::Value = serde_yaml::from_reader(f).expect("Unable to deserialize!");
     let baseurl = config["baseurl"]
@@ -246,7 +273,7 @@ fn main() -> io::Result<()> {
         .expect("Could not find key baseurl in something.yaml");
 
     //create channel from config
-    let mut ituneschannel = channelfromdir(&config);
+    let mut ituneschannel = channelfromdir(&config, &inputdirectory, &outputdirectory);
 
     // iterate over directories in input directory
     let mut inputentries = fs::read_dir(inputdirectory)?
