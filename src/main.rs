@@ -1,14 +1,11 @@
 use rss::extension::itunes::{ITunesChannelExtensionBuilder, NAMESPACE};
 use rss::{ChannelBuilder, EnclosureBuilder, ItemBuilder};
 use std::fs;
-use std::fs::DirEntry;
 use std::fs::File;
 use std::io;
-use std::io::BufWriter;
-use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
-use url::{ParseError, Url};
+use url::Url;
 
 #[macro_use]
 extern crate clap;
@@ -91,7 +88,7 @@ fn channelfromdir(
 
     println!("Image URL: {}", imageurl.clone());
 
-    let mut channelext = ITunesChannelExtensionBuilder::default()
+    let channelext = ITunesChannelExtensionBuilder::default()
         .image(imageurl)
         .author("John Doe".to_string())
         .summary(description)
@@ -140,9 +137,7 @@ fn enclosurefromfile(
     // path of audio file in the input structure
     let filename = Path::new(path).file_name().unwrap().to_str().unwrap();
 
-    let episoderelativepath = PathBuf::from(AUDIOPATH)
-        .join(filename);
-    
+    let episoderelativepath = PathBuf::from(AUDIOPATH).join(filename);
 
     // path of episode audio file in the output structure
     let episodeoutputpath = PathBuf::from(outputdirectory)
@@ -154,9 +149,7 @@ fn enclosurefromfile(
     // URL of the audio file in the deployed podcast structure
     let episodeurl = Url::parse(baseurl)
         .unwrap()
-        .join(&episoderelativepath.to_str()
-            .unwrap()
-            .to_string())
+        .join(&episoderelativepath.to_str().unwrap().to_string())
         .unwrap()
         .as_str()
         .to_string();
@@ -164,7 +157,11 @@ fn enclosurefromfile(
     //println!("Episode input path:  {:?}", path.clone());
     //println!("Episode output path: {}", episodepath.clone());
 
-    println!("Copying {:?} to {}", path.clone(), episodeoutputpath.clone());
+    println!(
+        "Copying {:?} to {}",
+        path.clone(),
+        episodeoutputpath.clone()
+    );
     fs::copy(path.clone(), episodeoutputpath.clone());
 
     println!("Episode URL: {}", episodeurl.clone());
@@ -276,7 +273,7 @@ fn main() -> io::Result<()> {
     let mut ituneschannel = channelfromdir(&config, &inputdirectory, &outputdirectory);
 
     // iterate over directories in input directory
-    let mut inputentries = fs::read_dir(inputdirectory)?
+    let inputentries = fs::read_dir(inputdirectory)?
         // map only applies the function if the element of the iterator is an Ok!
         // since the items `res` are not lists, we can just use and_then to avoid map
         // & the connotation of iterating
@@ -301,8 +298,6 @@ fn main() -> io::Result<()> {
 
     let path = outputdirectory.join(RSSPATH).join("podcast.rss");
     let writer = File::create(&path).unwrap();
-
-    //    channel.write_to(writer).unwrap(); // // write to the channel to a writer
 
     println!("");
     println!("");
