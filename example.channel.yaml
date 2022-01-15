@@ -6,7 +6,7 @@ title: "The Weather"
 
 baseurl: https://test-podcast.com/pod/
 
-# podcast image path, relative to this file
+# podcast image path, relative to the input directory
 # (for use in a itunes:image tag
 imagename: demo-image.png
 
