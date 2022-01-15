@@ -284,13 +284,22 @@ fn main() -> io::Result<()> {
         .pretty_write_to(writer, b' ', 2)
         .unwrap();
     println!("");
-    
+
     println!("Wrote to '{}'", path.display());
-    println!("Copy {}/* to {} to publish!", outputdirectory.file_name()
-        .unwrap()
-        .to_os_string()
-        .into_string().expect("couldn't format"), baseurl);
-    println!("And subscribe to {}{}podcast.rss to subscribe!", baseurl, RSSPATH);
-    
+    println!(
+        "Copy {}/* to {} to publish!",
+        outputdirectory
+            .file_name()
+            .unwrap()
+            .to_os_string()
+            .into_string()
+            .expect("couldn't format"),
+        baseurl
+    );
+    println!(
+        "And subscribe to {}{}podcast.rss to subscribe!",
+        baseurl, RSSPATH
+    );
+
     Ok(())
 }
