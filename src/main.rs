@@ -91,7 +91,11 @@ fn channelfromdir(config: &serde_yaml::Value) -> rss::ChannelBuilder {
     return ituneschannel;
 }
 
-fn enclosurefromfile(path: &PathBuf) -> Result<rss::Enclosure, Box<dyn std::error::Error>> {
+fn enclosurefromfile(
+    config: &serde_yaml::Value,
+    outputdirectory: &PathBuf,
+    path: &PathBuf,
+) -> Result<rss::Enclosure, Box<dyn std::error::Error>> {
     //TODO! build a (dummy?) enclosure object from a filename
     // use rodio to get duration
     // match fileformat with infer to get mime type
@@ -102,6 +106,42 @@ fn enclosurefromfile(path: &PathBuf) -> Result<rss::Enclosure, Box<dyn std::erro
 
     let metadata = fs::metadata(path)?;
 
+    let baseurl = config["baseurl"]
+        .as_str()
+        .expect("Could not find key baseurl in something.yaml");
+
+    // path of audio file in the input structure
+    let filename = Path::new(path).file_name().unwrap().to_str().unwrap();
+
+    let episoderelativepath = PathBuf::from(AUDIOPATH)
+        .join(filename);
+    
+
+    // path of episode audio file in the output structure
+    let episodeoutputpath = PathBuf::from(outputdirectory)
+        .join(&episoderelativepath)
+        .to_str()
+        .unwrap()
+        .to_string();
+
+    // URL of the audio file in the deployed podcast structure
+    let episodeurl = Url::parse(baseurl)
+        .unwrap()
+        .join(&episoderelativepath.to_str()
+            .unwrap()
+            .to_string())
+        .unwrap()
+        .as_str()
+        .to_string();
+
+    //println!("Episode input path:  {:?}", path.clone());
+    //println!("Episode output path: {}", episodepath.clone());
+
+    println!("Copying {:?} to {}", path.clone(), episodeoutputpath.clone());
+    fs::copy(path.clone(), episodeoutputpath.clone());
+
+    println!("Episode URL: {}", episodeurl.clone());
+
     println!("Build enclosure! {} bytes", metadata.len().to_string());
 
     // TODO! copy audio file to output tree
@@ -109,6 +149,7 @@ fn enclosurefromfile(path: &PathBuf) -> Result<rss::Enclosure, Box<dyn std::erro
     Ok(EnclosureBuilder::default()
         .mime_type(filetype.mime_type())
         .length(metadata.len().to_string())
+        .url(episodeurl)
         .build())
 }
 
@@ -118,7 +159,11 @@ fn isokayaudio(mimetype: &str) -> bool {
     mimetype == "audio/wav" || mimetype == "audio/x-wav"
 }
 
-fn episodefromdir(path: &PathBuf) -> Result<rss::Item, Box<dyn std::error::Error>> {
+fn episodefromdir(
+    config: &serde_yaml::Value,
+    outputdirectory: &PathBuf,
+    path: &PathBuf,
+) -> Result<rss::Item, Box<dyn std::error::Error>> {
     // build a dummy episode that always succeeds using the filename
     let pathstr = path
         .canonicalize()?
@@ -173,7 +218,7 @@ fn episodefromdir(path: &PathBuf) -> Result<rss::Item, Box<dyn std::error::Error
     Ok(ItemBuilder::default()
         .title(title)
         .description(pathstr)
-        .enclosure(enclosurefromfile(audiofile)?)
+        .enclosure(enclosurefromfile(config, outputdirectory, audiofile)?)
         .build())
 }
 
@@ -221,7 +266,7 @@ fn main() -> io::Result<()> {
 
     let episodes = inputdirectories
         .iter()
-        .filter_map(|path| episodefromdir(&path).ok())
+        .filter_map(|path| episodefromdir(&config, &outputdirectory, &path).ok())
         .clone()
         .collect::<Vec<_>>();
 
