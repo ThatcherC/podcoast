@@ -12,7 +12,6 @@
 
 - [Google Podcast requirements](https://support.google.com/podcast-publishers/answer/9889544?hl=en)
 
-
 ## Requirements
 
 Google:
@@ -26,6 +25,12 @@ Google:
 - Items (Episodes):
   - `<enclosure>`
   - `<title>`
+
+- All URLs need to a have fully-qualified domain name. Apparently, **IP addresses don't count!**
+
+- Also apparently, episode audio files must have file extensions. A WAV file called
+"episode" (not "episode.wav") will not be detected as a valid episode by the Google
+podcast app. (Found this by experimentation)
 
 ## Directories
 
